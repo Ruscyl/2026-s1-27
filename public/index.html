@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CEO Advantage Newsletter MVP</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1>CEO Advantage Newsletter Generator</h1>
+      <p>Transcript in → AI-generated executive newsletter out</p>
+    </header>
+
+    <main class="main-grid">
+      <section class="panel input-panel">
+        <h2>Podcast Transcript Input</h2>
+        <textarea id="transcriptInput" placeholder="Paste podcast transcript here..."></textarea>
+
+        <div class="button-row">
+          <button id="loadSampleBtn">Load Demo Transcript</button>
+          <button id="generateBtn">Generate Newsletter</button>
+        </div>
+
+        <div id="statusMessage" class="status-message"></div>
+      </section>
+
+      <section class="panel preview-panel">
+        <h2>Newsletter Preview</h2>
+        <div id="newsletterPreview" class="newsletter-preview empty-state">
+          <p>Your generated newsletter will appear here.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -3,6 +3,8 @@ const generateBtn = document.getElementById("generateBtn");
 const loadSampleBtn = document.getElementById("loadSampleBtn");
 const statusMessage = document.getElementById("statusMessage");
 const newsletterPreview = document.getElementById("newsletterPreview");
+const transcriptFileInput = document.getElementById("transcriptFile");
+const fileDropZone = document.getElementById("fileDropZone");
 
 const sampleTranscript = `Welcome to CEO Advantage. In today’s episode, we discuss why executive teams struggle to scale decision-making as organisations grow. Our guest is Sarah Mitchell, a leadership strategist and former COO with over twenty years of experience helping mid-market and enterprise leaders build resilient operating models.
 
@@ -105,6 +107,53 @@ function renderNewsletter(data) {
 loadSampleBtn.addEventListener("click", () => {
   transcriptInput.value = sampleTranscript;
   statusMessage.textContent = "Demo transcript loaded.";
+});
+
+function handleTranscriptFile(file) {
+  if (!file) {
+    statusMessage.textContent = "No transcript file selected.";
+    return;
+  }
+
+  const acceptedTypes = ["text/plain", "text/markdown", "application/octet-stream"];
+  if (!acceptedTypes.includes(file.type) && !file.name.match(/\.(txt|md|text|log)$/i)) {
+    statusMessage.textContent = "Please upload a plain text transcript file (.txt, .md, .log).";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    transcriptInput.value = reader.result;
+    statusMessage.textContent = `Loaded transcript from ${file.name}.`;
+  };
+  reader.onerror = () => {
+    statusMessage.textContent = `Unable to read ${file.name}. Please try another file.`;
+  };
+  reader.readAsText(file, "UTF-8");
+}
+
+transcriptFileInput.addEventListener("change", () => {
+  handleTranscriptFile(transcriptFileInput.files[0]);
+});
+
+fileDropZone.addEventListener("click", () => {
+  transcriptFileInput.click();
+});
+
+fileDropZone.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  fileDropZone.classList.add("dragover");
+});
+
+fileDropZone.addEventListener("dragleave", () => {
+  fileDropZone.classList.remove("dragover");
+});
+
+fileDropZone.addEventListener("drop", (event) => {
+  event.preventDefault();
+  fileDropZone.classList.remove("dragover");
+  const file = event.dataTransfer.files[0];
+  handleTranscriptFile(file);
 });
 
 generateBtn.addEventListener("click", async () => {

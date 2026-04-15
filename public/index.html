@@ -16,6 +16,15 @@
     <main class="main-grid">
       <section class="panel input-panel">
         <h2>Podcast Transcript Input</h2>
+
+        <div class="file-uploader">
+          <label for="transcriptFile" class="file-label">Upload a transcript file</label>
+          <div id="fileDropZone" class="file-dropzone" tabindex="0">
+            Drop a transcript file here or click to browse
+          </div>
+          <input id="transcriptFile" type="file" accept=".txt,.md,.text,.log" />
+        </div>
+
         <textarea id="transcriptInput" placeholder="Paste podcast transcript here..."></textarea>
 
         <div class="button-row">

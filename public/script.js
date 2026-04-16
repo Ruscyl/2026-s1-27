@@ -5,6 +5,21 @@ const statusMessage = document.getElementById("statusMessage");
 const newsletterPreview = document.getElementById("newsletterPreview");
 const transcriptFileInput = document.getElementById("transcriptFile");
 const fileDropZone = document.getElementById("fileDropZone");
+const subscriberNameInput = document.getElementById("subscriberName");
+const subscriberEmailInput = document.getElementById("subscriberEmail");
+const addSubscriberBtn = document.getElementById("addSubscriberBtn");
+const subscriberMessage = document.getElementById("subscriberMessage");
+const subscriberList = document.getElementById("subscriberList");
+const sendNewsletterBtn = document.getElementById("sendNewsletterBtn");
+const newsletterSubjectInput = document.getElementById("newsletterSubject");
+const distributionStatus = document.getElementById("distributionStatus");
+const sendConfirmModal = document.getElementById("sendConfirmModal");
+const confirmSendBtn = document.getElementById("confirmSendBtn");
+const cancelSendBtn = document.getElementById("cancelSendBtn");
+const sendConfirmMessage = document.getElementById("sendConfirmMessage");
+
+let currentNewsletterHtml = "";
+let subscribers = [];
 
 const sampleTranscript = `Welcome to CEO Advantage. In today’s episode, we discuss why executive teams struggle to scale decision-making as organisations grow. Our guest is Sarah Mitchell, a leadership strategist and former COO with over twenty years of experience helping mid-market and enterprise leaders build resilient operating models.
 
@@ -109,6 +124,195 @@ loadSampleBtn.addEventListener("click", () => {
   statusMessage.textContent = "Demo transcript loaded.";
 });
 
+function setSubscriberMessage(message) {
+  subscriberMessage.textContent = message;
+}
+
+function setDistributionMessage(message) {
+  distributionStatus.textContent = message;
+}
+
+function updateDistributionState() {
+  sendNewsletterBtn.disabled = !currentNewsletterHtml || subscribers.length === 0;
+}
+
+async function loadSubscribers() {
+  try {
+    const response = await fetch("/api/subscribers");
+    const data = await response.json();
+    subscribers = Array.isArray(data) ? data : [];
+    renderSubscriberList();
+    updateDistributionState();
+  } catch (error) {
+    console.error(error);
+    setSubscriberMessage("Unable to load subscribers.");
+  }
+}
+
+function renderSubscriberList() {
+  subscriberList.innerHTML = "";
+
+  if (!subscribers.length) {
+    subscriberList.innerHTML = "<li class='subscriber-empty'>No subscribers yet.</li>";
+    return;
+  }
+
+  subscribers.forEach((subscriber) => {
+    const li = document.createElement("li");
+    li.className = "subscriber-item";
+    li.innerHTML = `
+      <span><strong>${escapeHtml(subscriber.name)}</strong> &lt;${escapeHtml(subscriber.email)}&gt;</span>
+      <button class="remove-subscriber" data-email="${escapeHtml(subscriber.email)}">Remove</button>
+    `;
+    subscriberList.appendChild(li);
+  });
+}
+
+async function addSubscriber() {
+  const name = subscriberNameInput.value.trim();
+  const email = subscriberEmailInput.value.trim().toLowerCase();
+
+  if (!name || !email) {
+    setSubscriberMessage("Please enter both name and email.");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/subscribers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ name, email })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Unable to add subscriber.");
+    }
+
+    subscriberNameInput.value = "";
+    subscriberEmailInput.value = "";
+    setSubscriberMessage(`Added ${result.email}.`);
+    await loadSubscribers();
+  } catch (error) {
+    console.error(error);
+    setSubscriberMessage(error.message);
+  }
+}
+
+async function removeSubscriber(email) {
+  try {
+    const response = await fetch("/api/subscribers", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Unable to remove subscriber.");
+    }
+
+    setSubscriberMessage(`Removed ${email}.`);
+    await loadSubscribers();
+  } catch (error) {
+    console.error(error);
+    setSubscriberMessage(error.message);
+  }
+}
+
+function showSendConfirm() {
+  if (!currentNewsletterHtml) {
+    setDistributionMessage("Generate a newsletter before sending.");
+    return;
+  }
+  if (!subscribers.length) {
+    setDistributionMessage("Add subscribers before sending.");
+    return;
+  }
+
+  sendConfirmMessage.textContent = `You are about to send the newsletter to ${subscribers.length} subscriber(s). Proceed?`;
+  sendConfirmModal.classList.remove("hidden");
+}
+
+function hideSendConfirm() {
+  sendConfirmModal.classList.add("hidden");
+}
+
+async function sendNewsletter() {
+  hideSendConfirm();
+
+  const subject = newsletterSubjectInput.value.trim() || "CEO Advantage Newsletter";
+  sendNewsletterBtn.disabled = true;
+  sendNewsletterBtn.textContent = "Sending...";
+  setDistributionMessage("Distributing newsletter to subscribers...");
+
+  try {
+    const response = await fetch("/send-newsletter", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        subject,
+        html: currentNewsletterHtml,
+        text: stripHtml(currentNewsletterHtml)
+      })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Failed to send newsletter.");
+    }
+
+    if (!result.success) {
+      const detail = result.message || "Some newsletter deliveries failed.";
+      setDistributionMessage(detail);
+      console.warn("Newsletter delivery results:", result.results);
+      return;
+    }
+
+    setDistributionMessage(result.message || `Newsletter sent to ${result.delivered} subscriber(s).`);
+  } catch (error) {
+    console.error(error);
+    setDistributionMessage(error.message);
+  } finally {
+    sendNewsletterBtn.disabled = false;
+    sendNewsletterBtn.textContent = "Send Newsletter to Subscribers";
+  }
+}
+
+function stripHtml(html = "") {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+addSubscriberBtn.addEventListener("click", addSubscriber);
+subscriberList.addEventListener("click", (event) => {
+  if (event.target.classList.contains("remove-subscriber")) {
+    removeSubscriber(event.target.dataset.email);
+  }
+});
+
+sendNewsletterBtn.addEventListener("click", showSendConfirm);
+confirmSendBtn.addEventListener("click", sendNewsletter);
+cancelSendBtn.addEventListener("click", hideSendConfirm);
+sendConfirmModal.addEventListener("click", (event) => {
+  if (event.target === sendConfirmModal || event.target.classList.contains("modal-backdrop")) {
+    hideSendConfirm();
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    hideSendConfirm();
+  }
+});
+
+loadSubscribers();
+
 function handleTranscriptFile(file) {
   if (!file) {
     statusMessage.textContent = "No transcript file selected.";
@@ -184,7 +388,9 @@ generateBtn.addEventListener("click", async () => {
     }
 
     newsletterPreview.classList.remove("empty-state");
-    newsletterPreview.innerHTML = renderNewsletter(data);
+    currentNewsletterHtml = renderNewsletter(data);
+    newsletterPreview.innerHTML = currentNewsletterHtml;
+    updateDistributionState();
     statusMessage.textContent = "Newsletter generated successfully.";
   } catch (error) {
     console.error(error);

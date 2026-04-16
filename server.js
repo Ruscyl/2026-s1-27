@@ -1,5 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
+import fs from "fs";
+import juice from "juice";
+import nodemailer from "nodemailer";
 import OpenAI from "openai";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -15,6 +18,58 @@ const __dirname = path.dirname(__filename);
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+const subscribersFile = path.join(__dirname, "subscribers.json");
+let subscribers = [];
+
+function createMailTransporter() {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const secure = process.env.SMTP_SECURE === "true";
+
+  if (!host || !user || !pass || !process.env.FROM_EMAIL) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: {
+      user,
+      pass
+    }
+  });
+}
+
+const mailTransporter = createMailTransporter();
+
+async function loadSubscribers() {
+  try {
+    const data = await fs.promises.readFile(subscribersFile, "utf8");
+    subscribers = JSON.parse(data || "[]");
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      subscribers = [];
+      await fs.promises.writeFile(subscribersFile, JSON.stringify(subscribers, null, 2));
+    } else {
+      console.error("Unable to load subscribers:", error);
+      subscribers = [];
+    }
+  }
+}
+
+async function saveSubscribers() {
+  await fs.promises.writeFile(subscribersFile, JSON.stringify(subscribers, null, 2));
+}
+
+function stripHtml(html = "") {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+await loadSubscribers();
 
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -104,6 +159,129 @@ app.post("/generate-newsletter", async (req, res) => {
       error: "Failed to generate newsletter.",
       details: error.message
     });
+  }
+});
+
+app.get("/api/subscribers", (req, res) => {
+  res.json(subscribers);
+});
+
+app.post("/api/subscribers", async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    const normalizedEmail = (email || "").trim().toLowerCase();
+    const trimmedName = (name || "").trim();
+
+    if (!trimmedName || !normalizedEmail) {
+      return res.status(400).json({ error: "Name and email are required." });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({ error: "Please enter a valid email address." });
+    }
+
+    if (subscribers.some((subscriber) => subscriber.email === normalizedEmail)) {
+      return res.status(409).json({ error: "Subscriber already exists." });
+    }
+
+    const subscriber = { name: trimmedName, email: normalizedEmail };
+    subscribers.push(subscriber);
+    await saveSubscribers();
+
+    res.status(201).json(subscriber);
+  } catch (error) {
+    console.error("Add subscriber error:", error);
+    res.status(500).json({ error: "Failed to add subscriber." });
+  }
+});
+
+app.delete("/api/subscribers", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const normalizedEmail = (email || "").trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      return res.status(400).json({ error: "Email is required." });
+    }
+
+    const index = subscribers.findIndex((subscriber) => subscriber.email === normalizedEmail);
+    if (index === -1) {
+      return res.status(404).json({ error: "Subscriber not found." });
+    }
+
+    subscribers.splice(index, 1);
+    await saveSubscribers();
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Remove subscriber error:", error);
+    res.status(500).json({ error: "Failed to remove subscriber." });
+  }
+});
+
+app.post("/send-newsletter", async (req, res) => {
+  try {
+    const { subject, html, text } = req.body;
+
+    if (!subject || !subject.trim() || !html || !html.trim()) {
+      return res.status(400).json({ error: "Subject and newsletter content are required." });
+    }
+
+    if (!subscribers.length) {
+      return res.status(400).json({ error: "No subscribers available to send the newsletter." });
+    }
+
+    if (!mailTransporter) {
+      return res.status(500).json({
+        error:
+          "Email sending is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and FROM_EMAIL in .env."
+      });
+    }
+
+    const from = process.env.FROM_EMAIL;
+    const bodyText = text && text.trim() ? text : stripHtml(html);
+
+    // Inline CSS for better email client compatibility
+    const cssPath = path.join(__dirname, "public", "style.css");
+    const css = fs.readFileSync(cssPath, "utf8");
+    const fullHtml = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}</body></html>`;
+    const inlinedHtml = juice(fullHtml);
+
+    const results = await Promise.all(
+      subscribers.map(async (subscriber) => {
+        try {
+          await mailTransporter.sendMail({
+            from,
+            to: subscriber.email,
+            subject,
+            html: inlinedHtml,
+            text: bodyText
+          });
+          return { email: subscriber.email, status: "sent" };
+        } catch (error) {
+          return { email: subscriber.email, status: "failed", error: error.message };
+        }
+      })
+    );
+
+    const delivered = results.filter((item) => item.status === "sent").length;
+    const failed = results.filter((item) => item.status === "failed").length;
+    const success = failed === 0;
+
+    res.json({
+      success,
+      delivered,
+      failed,
+      results,
+      message: success
+        ? `Newsletter sent to ${delivered} subscriber(s).`
+        : failed === subscribers.length
+        ? "Newsletter delivery failed for all subscribers."
+        : `Newsletter delivered to ${delivered} subscriber(s), failed for ${failed}.`
+    });
+  } catch (error) {
+    console.error("Send newsletter error:", error);
+    res.status(500).json({ error: "Failed to distribute newsletter.", details: error.message });
   }
 });
 

@@ -41,7 +41,43 @@
           <p>Your generated newsletter will appear here.</p>
         </div>
       </section>
+
+      <section class="panel subscriber-panel">
+        <h2>Subscriber Management</h2>
+
+        <div class="subscriber-form">
+          <input id="subscriberName" type="text" placeholder="Subscriber name" />
+          <input id="subscriberEmail" type="email" placeholder="Subscriber email" />
+          <button id="addSubscriberBtn">Add Subscriber</button>
+        </div>
+
+        <div id="subscriberMessage" class="status-message"></div>
+
+        <div class="subscriber-list-wrapper">
+          <h3>Current Subscribers</h3>
+          <ul id="subscriberList" class="subscriber-list"></ul>
+        </div>
+
+        <div class="distribution-panel">
+          <h2>Email Distribution</h2>
+          <input id="newsletterSubject" type="text" placeholder="Newsletter subject line" />
+          <button id="sendNewsletterBtn">Send Newsletter to Subscribers</button>
+          <div id="distributionStatus" class="status-message"></div>
+        </div>
+      </section>
     </main>
+  </div>
+
+  <div id="sendConfirmModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel">
+      <h3>Confirm Send</h3>
+      <p id="sendConfirmMessage">You are about to send the newsletter to all subscribers. Proceed?</p>
+      <div class="modal-actions">
+        <button id="confirmSendBtn">Yes, send now</button>
+        <button id="cancelSendBtn" class="secondary">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>

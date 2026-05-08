@@ -18,10 +18,37 @@ const confirmSendBtn = document.getElementById("confirmSendBtn");
 const cancelSendBtn = document.getElementById("cancelSendBtn");
 const sendConfirmMessage = document.getElementById("sendConfirmMessage");
 
+// Edit modal elements
+const editModal = document.getElementById("editModal");
+const editNewsletterBtn = document.getElementById("editNewsletterBtn");
+const cancelEditBtn = document.getElementById("cancelEditBtn");
+const saveEditsBtn = document.getElementById("saveEditsBtn");
+
+const editFields = {
+  episode_number: document.getElementById("editEpisodeNumber"),
+  episode_title: document.getElementById("editEpisodeTitle"),
+  guest_name: document.getElementById("editGuestName"),
+  executive_brief: document.getElementById("editExecutiveBrief"),
+  insight_1_title: document.getElementById("editInsight1Title"),
+  insight_1_body: document.getElementById("editInsight1Body"),
+  insight_2_title: document.getElementById("editInsight2Title"),
+  insight_2_body: document.getElementById("editInsight2Body"),
+  insight_3_title: document.getElementById("editInsight3Title"),
+  insight_3_body: document.getElementById("editInsight3Body"),
+  quote_of_the_week: document.getElementById("editQuoteOfTheWeek"),
+  takeaway_1: document.getElementById("editTakeaway1"),
+  takeaway_2: document.getElementById("editTakeaway2"),
+  takeaway_3: document.getElementById("editTakeaway3"),
+  takeaway_4: document.getElementById("editTakeaway4"),
+  personalised_topic: document.getElementById("editPersonalisedTopic"),
+  personalised_insight: document.getElementById("editPersonalisedInsight")
+};
+
 let currentNewsletterHtml = "";
+let currentNewsletterData = {};
 let subscribers = [];
 
-const sampleTranscript = `Welcome to CEO Advantage. In today’s episode, we discuss why executive teams struggle to scale decision-making as organisations grow. Our guest is Sarah Mitchell, a leadership strategist and former COO with over twenty years of experience helping mid-market and enterprise leaders build resilient operating models.
+const sampleTranscript = `Welcome to CEO Advantage. In today's episode, we discuss why executive teams struggle to scale decision-making as organisations grow. Our guest is Sarah Mitchell, a leadership strategist and former COO with over twenty years of experience helping mid-market and enterprise leaders build resilient operating models.
 
 Sarah explains that many leadership teams mistake activity for alignment. She argues that when organisations scale, the core challenge is not adding more meetings, but improving decision clarity, accountability, and role ownership. She shares that executives often create complexity by allowing too many decisions to escalate to the top.
 
@@ -289,6 +316,42 @@ function stripHtml(html = "") {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function openEditModal() {
+  if (!currentNewsletterData || !Object.keys(currentNewsletterData).length) {
+    statusMessage.textContent = "Generate a newsletter before editing.";
+    return;
+  }
+
+  // Populate form with current data
+  Object.keys(editFields).forEach((key) => {
+    if (editFields[key]) {
+      editFields[key].value = currentNewsletterData[key] || "";
+    }
+  });
+
+  editModal.classList.remove("hidden");
+}
+
+function closeEditModal() {
+  editModal.classList.add("hidden");
+}
+
+function saveEdits() {
+  // Collect edited data
+  Object.keys(editFields).forEach((key) => {
+    if (editFields[key]) {
+      currentNewsletterData[key] = editFields[key].value || "";
+    }
+  });
+
+  // Re-render the newsletter preview with updated data
+  currentNewsletterHtml = renderNewsletter(currentNewsletterData);
+  newsletterPreview.innerHTML = currentNewsletterHtml;
+  statusMessage.textContent = "Newsletter updated.";
+  closeEditModal();
+}
+
+// Event listeners
 addSubscriberBtn.addEventListener("click", addSubscriber);
 subscriberList.addEventListener("click", (event) => {
   if (event.target.classList.contains("remove-subscriber")) {
@@ -305,9 +368,20 @@ sendConfirmModal.addEventListener("click", (event) => {
   }
 });
 
+// Edit modal event listeners
+editNewsletterBtn.addEventListener("click", openEditModal);
+saveEditsBtn.addEventListener("click", saveEdits);
+cancelEditBtn.addEventListener("click", closeEditModal);
+editModal.addEventListener("click", (event) => {
+  if (event.target === editModal || event.target.classList.contains("modal-backdrop")) {
+    closeEditModal();
+  }
+});
+
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     hideSendConfirm();
+    closeEditModal();
   }
 });
 
@@ -387,9 +461,12 @@ generateBtn.addEventListener("click", async () => {
       throw new Error(data.error || "Unknown server error.");
     }
 
+    // Store the newsletter data for editing
+    currentNewsletterData = data;
     newsletterPreview.classList.remove("empty-state");
     currentNewsletterHtml = renderNewsletter(data);
     newsletterPreview.innerHTML = currentNewsletterHtml;
+    editNewsletterBtn.classList.remove("hidden");
     updateDistributionState();
     statusMessage.textContent = "Newsletter generated successfully.";
   } catch (error) {

@@ -36,7 +36,10 @@
       </section>
 
       <section class="panel preview-panel">
-        <h2>Newsletter Preview</h2>
+        <div class="preview-header">
+          <h2>Newsletter Preview</h2>
+          <button id="editNewsletterBtn" class="edit-btn hidden">Edit</button>
+        </div>
         <div id="newsletterPreview" class="newsletter-preview empty-state">
           <p>Your generated newsletter will appear here.</p>
         </div>
@@ -76,6 +79,90 @@
       <div class="modal-actions">
         <button id="confirmSendBtn">Yes, send now</button>
         <button id="cancelSendBtn" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="editModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel edit-modal-panel">
+      <h3>Edit Newsletter</h3>
+      <div class="edit-form">
+        <div class="form-group">
+          <label for="editEpisodeNumber">Episode Number</label>
+          <input type="text" id="editEpisodeNumber" />
+        </div>
+        <div class="form-group">
+          <label for="editEpisodeTitle">Episode Title</label>
+          <input type="text" id="editEpisodeTitle" />
+        </div>
+        <div class="form-group">
+          <label for="editGuestName">Guest Name</label>
+          <input type="text" id="editGuestName" />
+        </div>
+        <div class="form-group">
+          <label for="editExecutiveBrief">Executive Brief</label>
+          <textarea id="editExecutiveBrief" rows="3"></textarea>
+        </div>
+        <div class="form-section">Insights</div>
+        <div class="form-group">
+          <label for="editInsight1Title">Insight 1 Title</label>
+          <input type="text" id="editInsight1Title" />
+        </div>
+        <div class="form-group">
+          <label for="editInsight1Body">Insight 1 Body</label>
+          <textarea id="editInsight1Body" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="editInsight2Title">Insight 2 Title</label>
+          <input type="text" id="editInsight2Title" />
+        </div>
+        <div class="form-group">
+          <label for="editInsight2Body">Insight 2 Body</label>
+          <textarea id="editInsight2Body" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="editInsight3Title">Insight 3 Title</label>
+          <input type="text" id="editInsight3Title" />
+        </div>
+        <div class="form-group">
+          <label for="editInsight3Body">Insight 3 Body</label>
+          <textarea id="editInsight3Body" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="editQuoteOfTheWeek">Quote of the Week</label>
+          <textarea id="editQuoteOfTheWeek" rows="2"></textarea>
+        </div>
+        <div class="form-section">Key Takeaways</div>
+        <div class="form-group">
+          <label for="editTakeaway1">Takeaway 1</label>
+          <input type="text" id="editTakeaway1" />
+        </div>
+        <div class="form-group">
+          <label for="editTakeaway2">Takeaway 2</label>
+          <input type="text" id="editTakeaway2" />
+        </div>
+        <div class="form-group">
+          <label for="editTakeaway3">Takeaway 3</label>
+          <input type="text" id="editTakeaway3" />
+        </div>
+        <div class="form-group">
+          <label for="editTakeaway4">Takeaway 4</label>
+          <input type="text" id="editTakeaway4" />
+        </div>
+        <div class="form-section">Personalized Executive Focus</div>
+        <div class="form-group">
+          <label for="editPersonalisedTopic">Topic</label>
+          <input type="text" id="editPersonalisedTopic" />
+        </div>
+        <div class="form-group">
+          <label for="editPersonalisedInsight">Insight</label>
+          <textarea id="editPersonalisedInsight" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="saveEditsBtn">Save Changes</button>
+        <button id="cancelEditBtn" class="secondary">Cancel</button>
       </div>
     </div>
   </div>

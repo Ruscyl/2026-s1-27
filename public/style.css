@@ -568,3 +568,91 @@ button {
     min-height: 320px;
   }
 }
+
+.subscription-links {
+  text-align: center;
+  padding: 16px 28px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  font-size: 12px;
+}
+
+.subscription-link {
+  color: #1d4ed8;
+  text-decoration: none;
+  margin: 0 8px;
+}
+
+.subscription-link:hover {
+  text-decoration: underline;
+}
+
+.page-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #f4f6f8;
+}
+
+.subscribe-panel,
+.unsubscribe-panel {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  padding: 40px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.subscribe-panel h1,
+.unsubscribe-panel h1 {
+  margin: 0 0 16px;
+  font-size: 28px;
+  color: #0f172a;
+}
+
+.subscribe-panel p,
+.unsubscribe-panel p {
+  margin: 0 0 24px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.submit-btn {
+  background: #1d4ed8;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  width: 100%;
+  transition: 0.2s ease;
+}
+
+.submit-btn:hover {
+  background: #1e40af;
+}
+
+.message {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.message.success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.message.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}

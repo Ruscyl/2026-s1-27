@@ -141,6 +141,11 @@ function renderNewsletter(data) {
         <div class="footer">
           CEO Advantage • Executive insights for leaders, decision-makers, and growth-focused organisations.
         </div>
+
+        <div class="subscription-links">
+          <a href="http://localhost:3000/subscribe.html" class="subscription-link">Subscribe to Newsletter</a> |
+          <a href="http://localhost:3000/unsubscribe.html" class="subscription-link">Unsubscribe</a>
+        </div>
       </div>
     </div>
   `;

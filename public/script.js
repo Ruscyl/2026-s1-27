@@ -67,6 +67,65 @@ function escapeHtml(str = "") {
     .replace(/'/g, "&#039;");
 }
 
+function shareNewsletter(title, description, url) {
+  if (navigator.share) {
+    navigator.share({
+      title: title,
+      text: description,
+      url: url
+    }).catch(err => console.log("Share failed:", err));
+  } else {
+    // Fallback for browsers that don't support Web Share API
+    const shareText = `${title}: ${description} ${url}`;
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareText);
+      alert("Newsletter link copied to clipboard! Share it with your network.");
+    } else {
+      // Last resort fallback
+      const options = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(description + '\n\nRead more: ' + url)}`;
+      window.location.href = options;
+    }
+  }
+}
+
+function showListenOptions() {
+  const listenModal = document.getElementById("listenModal");
+  if (!listenModal) {
+    const modal = document.createElement("div");
+    modal.id = "listenModal";
+    modal.className = "listen-modal";
+    modal.innerHTML = `
+      <div class="listen-modal-content">
+        <button class="close-listen-modal">&times;</button>
+        <h3>Listen on Your Favorite Platform</h3>
+        <div class="listen-links">
+          <a href="https://open.spotify.com/show/2hqjPBGxcJyV8FXfFg693e" target="_blank" class="listen-btn spotify">
+            <span></span> Spotify
+          </a>
+          <a href="https://www.youtube.com/@CEOAdvantage" target="_blank" class="listen-btn youtube">
+            <span></span> YouTube
+          </a>
+          <a href="https://podcasts.apple.com/au/podcast/the-ceo-advantage-podcast/id1778332919" target="_blank" class="listen-btn apple">
+            <span></span> Apple Podcasts
+          </a>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    modal.querySelector(".close-listen-modal").addEventListener("click", () => {
+      modal.remove();
+    });
+    
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
+    });
+  } else {
+    listenModal.style.display = "flex";
+  }
+}
+
 function renderNewsletter(data) {
   return `
     <div class="email-wrapper">
@@ -122,19 +181,18 @@ function renderNewsletter(data) {
         </div>
 
         <div class="section">
-          <h2>Personalised Executive Focus</h2>
+          <h2>Join the CEO Advantage Community</h2>
           <div class="personalised-box">
-            <h3>${escapeHtml(data.personalised_topic || "Leadership Strategy")}</h3>
-            <p>${escapeHtml(data.personalised_insight || "Focus on building systems that improve executive decision quality and organisational alignment.")}</p>
+            <p>Subscribe to the CEO Advantage podcast for weekly executive strategy discussions, leadership insights, and conversations with industry leaders. Get the edge you need to lead with confidence. <a href="https://www.ceoadvantage.com.au/" target="_blank">Learn more</a></p>
           </div>
         </div>
 
         <div class="section">
           <h2>Continue the Conversation</h2>
           <div class="cta-row">
-            <a href="${escapeHtml(data.listen_url || "#")}" class="cta-button">Listen Now</a>
+            <button onclick="showListenOptions()" class="cta-button">Listen Now</button>
             <a href="${escapeHtml(data.read_more_url || "#")}" class="cta-button secondary">Read More</a>
-            <a href="${escapeHtml(data.share_url || "#")}" class="cta-button">Share Episode</a>
+            <button onclick="shareNewsletter('${escapeHtml(data.episode_title || 'CEO Advantage Newsletter')}', '${escapeHtml(data.executive_brief || 'Check out this executive insight from CEO Advantage')}', 'https://www.ceoadvantage.com.au/')" class="cta-button">Share Newsletter</button>
           </div>
         </div>
 

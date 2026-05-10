@@ -47,6 +47,7 @@ const editFields = {
 let currentNewsletterHtml = "";
 let currentNewsletterData = {};
 let subscribers = [];
+let sentToManager = false;
 
 const sampleTranscript = `Welcome to CEO Advantage. In today's episode, we discuss why executive teams struggle to scale decision-making as organisations grow. Our guest is Sarah Mitchell, a leadership strategist and former COO with over twenty years of experience helping mid-market and enterprise leaders build resilient operating models.
 
@@ -223,7 +224,16 @@ function setDistributionMessage(message) {
 }
 
 function updateDistributionState() {
-  sendNewsletterBtn.disabled = !currentNewsletterHtml || subscribers.length === 0;
+  if (!currentNewsletterHtml) {
+    sendNewsletterBtn.disabled = true;
+    sendNewsletterBtn.textContent = "Send to Manager for Approval";
+  } else if (!sentToManager) {
+    sendNewsletterBtn.disabled = false;
+    sendNewsletterBtn.textContent = "Send to Manager for Approval";
+  } else {
+    sendNewsletterBtn.disabled = subscribers.length === 0;
+    sendNewsletterBtn.textContent = "Send Newsletter to Subscribers";
+  }
 }
 
 async function loadSubscribers() {
@@ -319,12 +329,15 @@ function showSendConfirm() {
     setDistributionMessage("Generate a newsletter before sending.");
     return;
   }
-  if (!subscribers.length) {
-    setDistributionMessage("Add subscribers before sending.");
-    return;
+  if (!sentToManager) {
+    sendConfirmMessage.textContent = "You are about to send the newsletter to the manager for approval. Proceed?";
+  } else {
+    if (!subscribers.length) {
+      setDistributionMessage("Add subscribers before sending.");
+      return;
+    }
+    sendConfirmMessage.textContent = `You are about to send the newsletter to ${subscribers.length} subscriber(s). Proceed?`;
   }
-
-  sendConfirmMessage.textContent = `You are about to send the newsletter to ${subscribers.length} subscriber(s). Proceed?`;
   sendConfirmModal.classList.remove("hidden");
 }
 
@@ -338,10 +351,11 @@ async function sendNewsletter() {
   const subject = newsletterSubjectInput.value.trim() || "CEO Advantage Newsletter";
   sendNewsletterBtn.disabled = true;
   sendNewsletterBtn.textContent = "Sending...";
-  setDistributionMessage("Distributing newsletter to subscribers...");
+  setDistributionMessage(sentToManager ? "Distributing newsletter to subscribers..." : "Sending newsletter to manager for approval...");
 
   try {
-    const response = await fetch("/send-newsletter", {
+    const endpoint = sentToManager ? "/send-newsletter" : "/send-to-manager";
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -358,20 +372,25 @@ async function sendNewsletter() {
       throw new Error(result.error || "Failed to send newsletter.");
     }
 
-    if (!result.success) {
-      const detail = result.message || "Some newsletter deliveries failed.";
-      setDistributionMessage(detail);
-      console.warn("Newsletter delivery results:", result.results);
-      return;
+    if (!sentToManager) {
+      sentToManager = true;
+      setDistributionMessage("Newsletter sent to manager for approval. You can now send to subscribers.");
+      updateDistributionState();
+    } else {
+      if (!result.success) {
+        const detail = result.message || "Some newsletter deliveries failed.";
+        setDistributionMessage(detail);
+        console.warn("Newsletter delivery results:", result.results);
+        return;
+      }
+      setDistributionMessage(result.message || `Newsletter sent to ${result.delivered} subscriber(s).`);
     }
-
-    setDistributionMessage(result.message || `Newsletter sent to ${result.delivered} subscriber(s).`);
   } catch (error) {
     console.error(error);
     setDistributionMessage(error.message);
   } finally {
     sendNewsletterBtn.disabled = false;
-    sendNewsletterBtn.textContent = "Send Newsletter to Subscribers";
+    sendNewsletterBtn.textContent = sentToManager ? "Send Newsletter to Subscribers" : "Send to Manager for Approval";
   }
 }
 
@@ -408,8 +427,10 @@ function saveEdits() {
   });
 
   // Re-render the newsletter preview with updated data
+  sentToManager = false; // Reset approval state after editing
   currentNewsletterHtml = renderNewsletter(currentNewsletterData);
   newsletterPreview.innerHTML = currentNewsletterHtml;
+  updateDistributionState();
   statusMessage.textContent = "Newsletter updated.";
   closeEditModal();
 }
@@ -526,6 +547,7 @@ generateBtn.addEventListener("click", async () => {
 
     // Store the newsletter data for editing
     currentNewsletterData = data;
+    sentToManager = false; // Reset approval state for new newsletter
     newsletterPreview.classList.remove("empty-state");
     currentNewsletterHtml = renderNewsletter(data);
     newsletterPreview.innerHTML = currentNewsletterHtml;

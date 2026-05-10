@@ -219,6 +219,49 @@ app.delete("/api/subscribers", async (req, res) => {
   }
 });
 
+app.post("/send-to-manager", async (req, res) => {
+  try {
+    const { subject, html, text } = req.body;
+
+    if (!subject || !subject.trim() || !html || !html.trim()) {
+      return res.status(400).json({ error: "Subject and newsletter content are required." });
+    }
+
+    if (!mailTransporter) {
+      return res.status(500).json({
+        error:
+          "Email sending is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and FROM_EMAIL in .env."
+      });
+    }
+
+    const managerEmail = "pixelmaster007@gmail.com";
+    const from = process.env.FROM_EMAIL;
+    const bodyText = text && text.trim() ? text : stripHtml(html);
+
+    // Inline CSS for better email client compatibility
+    const cssPath = path.join(__dirname, "public", "style.css");
+    const css = fs.readFileSync(cssPath, "utf8");
+    const fullHtml = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}</body></html>`;
+    const inlinedHtml = juice(fullHtml);
+
+    await mailTransporter.sendMail({
+      from,
+      to: managerEmail,
+      subject: `Newsletter Approval Required: ${subject}`,
+      html: inlinedHtml,
+      text: bodyText
+    });
+
+    res.json({
+      success: true,
+      message: "Newsletter sent to manager for approval."
+    });
+  } catch (error) {
+    console.error("Send to manager error:", error);
+    res.status(500).json({ error: "Failed to send newsletter to manager.", details: error.message });
+  }
+});
+
 app.post("/send-newsletter", async (req, res) => {
   try {
     const { subject, html, text } = req.body;
@@ -285,6 +328,24 @@ app.post("/send-newsletter", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
+  console.log(`Press Ctrl+C to stop the server`);
+});
+
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log("\nShutting down gracefully...");
+  server.close(() => {
+    console.log("Server stopped.");
+    process.exit(0);
+  });
+});
+
+process.on("SIGTERM", () => {
+  console.log("Shutting down gracefully...");
+  server.close(() => {
+    console.log("Server stopped.");
+    process.exit(0);
+  });
 });

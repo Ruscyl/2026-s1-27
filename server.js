@@ -112,7 +112,7 @@ Return this exact structure:
   "takeaway_4": "",
   "personalised_topic": "Leadership Strategy",
   "personalised_insight": "",
-  "listen_url": "#",
+  "listen_url": "https://www.ceoadvantage.com.au/podcast",
   "read_more_url": "#",
   "share_url": "#"
 }

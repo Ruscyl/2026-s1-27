@@ -191,9 +191,8 @@ function renderNewsletter(data) {
         <div class="section">
           <h2>Continue the Conversation</h2>
           <div class="cta-row">
-            <button onclick="showListenOptions()" class="cta-button">Listen Now</button>
-            <a href="${escapeHtml(data.read_more_url || "#")}" class="cta-button secondary">Read More</a>
-            <button onclick="shareNewsletter('${escapeHtml(data.episode_title || 'CEO Advantage Newsletter')}', '${escapeHtml(data.executive_brief || 'Check out this executive insight from CEO Advantage')}', 'https://www.ceoadvantage.com.au/')" class="cta-button">Share Newsletter</button>
+            <a href="${escapeHtml((data.listen_url && data.listen_url !== '#') ? data.listen_url : 'https://www.ceoadvantage.com.au/podcast')}" class="cta-button" target="_blank">Listen Now</a>
+            <a href="mailto:?subject=${encodeURIComponent('CEO Advantage Newsletter: ' + (data.episode_title || 'Executive Insights'))}&body=${encodeURIComponent('Check out this executive insight from CEO Advantage:\n\n' + (data.executive_brief || '') + '\n\nListen here: ' + ((data.listen_url && data.listen_url !== '#') ? data.listen_url : 'https://www.ceoadvantage.com.au/podcast'))}" class="cta-button">Share Newsletter</a>
           </div>
         </div>
 
